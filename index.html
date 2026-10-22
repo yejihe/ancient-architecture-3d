@@ -1,6 +1,6 @@
 <!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>书院探构 · 三维手势拆解</title><style>
 *{box-sizing:border-box}body{margin:0;overflow:hidden;background:#07161c;color:#f6e7ca;font:14px system-ui,sans-serif;touch-action:none}#view{position:fixed;inset:0}#view canvas{display:block}header{position:fixed;top:0;left:0;right:0;padding:22px;pointer-events:none}h1{font:29px serif;margin:4px 0}small{color:#abbdbe}.badge{font-size:11px;letter-spacing:3px;color:#cdbb89}#ui{position:fixed;bottom:env(safe-area-inset-bottom);left:0;right:0;padding:13px;max-width:560px;margin:auto}section{border:1px solid #ffffff32;background:#102932db;backdrop-filter:blur(15px);padding:14px;border-radius:18px}input{width:100%;accent-color:#efce91;margin:14px 0}#row{display:flex;justify-content:space-between;gap:8px;font-size:12px}nav{display:flex;gap:8px;margin-top:9px}button{flex:1;border:1px solid #ffffff26;background:#1d414a;border-radius:12px;padding:12px 2px;color:#fff2d9;font-size:12px}button.primary{background:#d5b67d;color:#182b2e;font-weight:700}#state{font-size:11px;color:#b8ccc6;margin-top:7px;min-height:17px}video{position:fixed;right:12px;top:110px;width:110px;height:85px;transform:scaleX(-1);object-fit:cover;border-radius:10px;border:1px solid #ffffff66;display:none}#alert{position:fixed;top:45%;left:6%;right:6%;text-align:center;pointer-events:none;color:#ffc986;text-shadow:0 2px 8px #000;z-index:4}@media(min-width:650px){#ui{bottom:20px}}
-</style></head><body><div id="view"></div><header><div class="badge">WOODEN ARCHITECTURE / 001</div><h1>书院探构</h1><small>传统书院讲堂 · 三维结构示意模型 · v1.2</small></header><video id="video" playsinline muted autoplay></video><div id="alert"></div><div id="ui"><section><div id="row"><b>结构分层拆解</b><span id="percent">0%</span></div><input id="explode" type="range" min="0" max="100" value="0"><div id="row"><span id="part">完整书院</span><span>单指旋转 · 双指缩放</span></div><div id="state">v1.2 已载入 · 先用触屏探索，开启手势后可隔空操控。</div></section><nav><button id="hands" class="primary">✋ 开启手势</button><button id="reset">↺ 复位</button><button id="auto">◌ 自动旋转</button><button id="full">⛶ 全屏</button></nav></div>
+</style></head><body><div id="view"></div><header><div class="badge">WOODEN ARCHITECTURE / 001</div><h1>书院探构</h1><small>传统书院讲堂 · 三维结构示意模型 · v1.3</small></header><video id="video" playsinline muted autoplay></video><div id="alert"></div><div id="ui"><section><div id="row"><b>结构分层拆解</b><span id="percent">0%</span></div><input id="explode" type="range" min="0" max="100" value="0"><div id="row"><span id="part">完整书院</span><span>单指旋转 · 双指缩放</span></div><div id="state">v1.3 已载入 · 先用触屏探索，开启手势后可隔空操控。</div></section><nav><button id="hands" class="primary">✋ 开启手势</button><button id="reset">↺ 复位</button><button id="auto">◌ 自动旋转</button><button id="full">⛶ 全屏</button></nav></div>
 <script type="module">
 import * as T from 'https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js';
 const $=id=>document.getElementById(id),scene=new T.Scene();scene.background=new T.Color(0x08191e);const camera=new T.PerspectiveCamera(38,innerWidth/innerHeight,.1,100),renderer=new T.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,1.75));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;$('view').appendChild(renderer.domElement);
@@ -21,48 +21,56 @@ let floor=new T.Mesh(new T.CircleGeometry(35,70),mat(0x12252a));floor.rotation.x
 let yaw=-.47,pitch=.24,zoom=1,explosion=0,autorun=false;function refresh(){for(let p of parts)p.g.position.y=explosion*p.rise;$('percent').textContent=Math.round(explosion*100)+'%';$('part').textContent=explosion<.1?'完整书院':explosion<.42?'屋顶 · 飞檐':explosion<.75?'斗拱 · 梁架':'柱础 · 木构骨架'}$('explode').oninput=e=>{explosion=+e.target.value/100;refresh()};$('reset').onclick=()=>{yaw=-.47;pitch=.24;zoom=1;explosion=0;autorun=false;$('explode').value=0;$('auto').textContent='◌ 自动旋转';refresh()};$('auto').onclick=()=>{autorun=!autorun;$('auto').textContent=autorun?'Ⅱ 停止旋转':'◌ 自动旋转'};$('full').onclick=()=>document.fullscreenElement?document.exitFullscreen?.():document.documentElement.requestFullscreen?.().catch(()=>{});
 let points=new Map();let canvas=renderer.domElement;canvas.addEventListener('pointerdown',e=>{points.set(e.pointerId,{x:e.clientX,y:e.clientY});canvas.setPointerCapture(e.pointerId)});canvas.addEventListener('pointermove',e=>{if(!points.has(e.pointerId))return;let before=[...points.values()],p=points.get(e.pointerId),dx=e.clientX-p.x,dy=e.clientY-p.y;points.set(e.pointerId,{x:e.clientX,y:e.clientY});if(points.size===1){yaw-=dx*.008;pitch=T.MathUtils.clamp(pitch+dy*.006,-1.1,1.15)}else if(points.size===2){let dist=a=>Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y),a=dist(before),b=dist([...points.values()]);if(a>5)zoom=T.MathUtils.clamp(zoom*b/a,.65,3.5)}});for(let ev of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(ev,e=>points.delete(e.pointerId));canvas.addEventListener('wheel',e=>{e.preventDefault();zoom=T.MathUtils.clamp(zoom*Math.exp(-e.deltaY*.001),.65,3.5)},{passive:false});
 let stream,tracker,enabled=false,prev=null,kind='idle',lastTime=0;
-let zoomGesture='idle',closedSince=0,lastOpen=0;
-function measure(h){let palm=h[0],joint=h[9],base=Math.max(.03,Math.hypot(palm.x-joint.x,palm.y-joint.y)),spread=[4,8,12,16,20].reduce((a,i)=>a+Math.hypot(h[i].x-palm.x,h[i].y-palm.y),0)/(5*base);return{x:1-joint.x,y:joint.y,spread}}
+let gesture='neutral',fistSince=0,openSince=0,lastFrame=0;
+function measure(h){
+ const dist=(i,j)=>Math.hypot(h[i].x-h[j].x,h[i].y-h[j].y);
+ const scale=Math.max(.035,dist(0,9));
+ const spread=[4,8,12,16,20].reduce((a,i)=>a+dist(i,0),0)/(5*scale);
+ let bent=0;for(const [tip,pip] of [[8,6],[12,10],[16,14],[20,18]])if(dist(tip,0)<dist(pip,0)*1.13)bent++;
+ const tips=[4,8,12,16,20];let cx=tips.reduce((v,i)=>v+h[i].x,0)/5,cy=tips.reduce((v,i)=>v+h[i].y,0)/5;
+ const cluster=tips.reduce((v,i)=>v+Math.hypot(h[i].x-cx,h[i].y-cy),0)/5/scale;
+ const fist=bent>=3;
+ const pinch=!fist && cluster<.63 && bent<=2;
+ const open=!fist&&!pinch&&bent<=1&&spread>1.68;
+ return{x:1-h[9].x,y:h[9].y,spread,fist,pinch,open};
+}
 function updateHands(all){
- const now=performance.now();
- if(!all.length){prev=null;kind='idle';zoomGesture='idle';$('state').textContent='👋 未识别到手 · 已锁定当前视角与大小';return}
+ const now=performance.now(),dt=Math.min(.12,Math.max(0,(now-lastFrame)/1000));lastFrame=now;
+ if(!all.length){prev=null;kind='idle';gesture='neutral';$('state').textContent='👋 未识别到手 · 视角及大小保持不变';return}
  let h=all.map(measure).sort((a,b)=>a.x-b.x);
- if(h.length===2){let gap=h[1].x-h[0].x;
-  $('state').textContent='👐 双手分合 · 逐层拆解 / 复原';
-  if(kind==='explode'&&prev){explosion=T.MathUtils.clamp(explosion+(gap-prev.gap)*1.6,0,1);$('explode').value=Math.round(explosion*100);refresh()}
-  kind='explode';zoomGesture='idle';prev={gap};return;
+ if(h.length===2){const gap=h[1].x-h[0].x;
+   if(kind==='explode'&&prev){explosion=T.MathUtils.clamp(explosion+(gap-prev.gap)*1.6,0,1);$('explode').value=Math.round(explosion*100);refresh()}
+   kind='explode';gesture='neutral';prev={gap};$('state').textContent='👐 双手分合 · 拆解 / 复原';return;
  }
- let a=h[0],isClosed=a.spread<1.62,isOpen=a.spread>1.95;
- // A closing gesture starts a new zoom cycle. Fingers returning to closed never undo the previous enlargement.
- if(kind==='explode'){kind='idle';prev=null}
- if(isClosed && zoomGesture==='idle'){zoomGesture='armed';closedSince=now;prev=a;kind='zoom';$('state').textContent='🤏 已收拢 · 准备放大（保持不变）';return}
- if(zoomGesture!=='idle'){
-  kind='zoom';
-  let ds=prev?a.spread-prev.spread:0,dy=prev?a.y-prev.y:0;
-  if(isClosed){
-   if(zoomGesture==='opening') {zoomGesture='armed';closedSince=now}
-   if(zoomGesture==='shrinking'){
-    if(prev&&dy>.006&&dy<.12)zoom=T.MathUtils.clamp(zoom*Math.exp(-dy*3.2),.65,3.5);
-    $('state').textContent='👇 五指收拢向下移动 · 正在缩小';
-   }else if(now-closedSince>380&&dy>.012&&dy<.1){
-    zoomGesture='shrinking';$('state').textContent='👇 五指收拢向下移动 · 正在缩小';
-   }else{$('state').textContent='🤏 五指已收拢 · 大小锁定 / 准备放大'}
-  }else if(ds>.008&&ds<.36){
-   zoomGesture='opening';zoom=T.MathUtils.clamp(zoom*Math.exp(ds*1.65),.65,3.5);
-   $('state').textContent='🖐️ 五指展开 · 正在放大';
-   lastOpen=now;
-  }else if(ds<-.008){
-   if(zoomGesture==='shrinking')zoomGesture='armed';
-   $('state').textContent='↩️ 收拢复位 · 大小保持不变';
-  }else{$('state').textContent='✅ 手势静止 · 大小保持不变'}
-  // After fully opening, return to rotation without resetting zoom; pinch again to start another zoom cycle.
-  if(isOpen&&now-lastOpen>500&&zoomGesture!=='shrinking'){zoomGesture='idle';kind='rotate';prev=a;$('state').textContent='✋ 张掌划动 · 旋转观察';return}
-  prev=a;return;
+ let a=h[0];if(kind==='explode'){prev=null;gesture='neutral'}kind='single';
+ // A fist means shrinking, not arming zoom. A held fist shrinks gradually until released.
+ if(a.fist){
+   if(gesture!=='fist'){fistSince=now;gesture='fist';prev=a;$('state').textContent='✊ 握拳 · 准备缩小';return}
+   if(now-fistSince>250)zoom=T.MathUtils.clamp(zoom*Math.exp(-.44*dt),.65,3.5);
+   $('state').textContent=zoom<=.651?'✊ 已缩至最小':'✊ 握拳保持 · 正在缩小';prev=a;return;
  }
- kind='rotate';$('state').textContent='✋ 张掌划动 · 旋转观察';
- if(prev && prev.spread>1.75){let dx=a.x-prev.x,dy=a.y-prev.y;
-   if(Math.abs(dx)<.12&&Math.abs(dy)<.12){yaw-=dx*4;pitch=T.MathUtils.clamp(pitch+dy*3,-1.1,1.15)}
+ // Only an explicit five-fingertip gathering can arm enlargement.
+ // Return-to-gathering never reduces zoom.
+ if(a.pinch){
+   if(gesture!=='pinch'){gesture='pinch';$('state').textContent='🤏 五指聚拢 · 准备放大';}
+   else $('state').textContent='🤏 五指聚拢 · 大小保持不变';
+   prev=a;return;
  }
+ if(gesture==='pinch' || gesture==='enlarge'){
+   let ds=prev?a.spread-prev.spread:0;
+   if(ds>.008&&ds<.32){zoom=T.MathUtils.clamp(zoom*Math.exp(ds*1.6),.65,3.5);gesture='enlarge';$('state').textContent='🖐️ 五指展开 · 正在放大'}
+   else if(ds<-.01){$('state').textContent='↩️ 收手复位 · 不会缩小'}
+   else $('state').textContent='✅ 缩放暂停 · 保持当前大小';
+   if(a.open){if(!openSince)openSince=now;if(now-openSince>260){gesture='rotate';$('state').textContent='✋ 张掌移动 · 旋转建筑';}}
+   else openSince=0;
+   prev=a;return;
+ }
+ openSince=0;
+ if(a.open){
+   if(gesture!=='rotate'){gesture='rotate';prev=a;$('state').textContent='✋ 张掌移动 · 旋转建筑';return}
+   if(prev){let dx=a.x-prev.x,dy=a.y-prev.y;if(Math.abs(dx)<.12&&Math.abs(dy)<.12){yaw-=dx*4;pitch=T.MathUtils.clamp(pitch+dy*3,-1.1,1.15)}}
+   $('state').textContent='✋ 张掌移动 · 旋转建筑';
+ }else{$('state').textContent='⏸ 手势未确认 · 保持当前状态';gesture='neutral'}
  prev=a;
 }
 $('hands').onclick=async()=>{if(enabled){enabled=false;stream?.getTracks().forEach(t=>t.stop());$('video').style.display='none';$('hands').textContent='✋ 开启手势';$('state').textContent='已停止摄像头';return}let btn=$('hands');btn.disabled=true;btn.textContent='加载识别模型…';try{if(!navigator.mediaDevices?.getUserMedia)throw Error('需要HTTPS打开网页');let mod, wasmBase; const sources=[['https://unpkg.com/@mediapipe/tasks-vision@0.10.21/vision_bundle.mjs','https://unpkg.com/@mediapipe/tasks-vision@0.10.21/wasm'],['https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.21/vision_bundle.mjs','https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.21/wasm'],['https://esm.sh/@mediapipe/tasks-vision@0.10.21','https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.21/wasm']];let errors=[];for(let [url,wasm] of sources){try{mod=await import(url);wasmBase=wasm;break}catch(err){errors.push(url+': '+err.message)}}if(!mod)throw Error('手势模块加载失败，请尝试切换网络。'+errors.map(e=>e.slice(0,75)).join(' | '));let {HandLandmarker,FilesetResolver}=mod;let vision=await FilesetResolver.forVisionTasks(wasmBase);let opts={baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task',delegate:'GPU'},runningMode:'VIDEO',numHands:2};try{tracker=await HandLandmarker.createFromOptions(vision,opts)}catch(e){opts.baseOptions.delegate='CPU';tracker=await HandLandmarker.createFromOptions(vision,opts)}stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:640}},audio:false});let v=$('video');v.srcObject=stream;await v.play();v.style.display='block';enabled=true;btn.textContent='◼ 关闭手势';$('state').textContent='识别已开启 · 手掌旋转 / 五指缩放 / 双手拆解'}catch(e){$('state').textContent='摄像头失败：'+e.message;btn.textContent='✋ 重试手势'}finally{btn.disabled=false}};
