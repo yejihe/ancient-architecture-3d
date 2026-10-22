@@ -1,6 +1,6 @@
 <!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>书院探构 · 三维手势拆解</title><style>
 *{box-sizing:border-box}body{margin:0;overflow:hidden;background:#07161c;color:#f6e7ca;font:14px system-ui,sans-serif;touch-action:none}#view{position:fixed;inset:0}#view canvas{display:block}header{position:fixed;top:0;left:0;right:0;padding:22px;pointer-events:none}h1{font:29px serif;margin:4px 0}small{color:#abbdbe}.badge{font-size:11px;letter-spacing:3px;color:#cdbb89}#ui{position:fixed;bottom:env(safe-area-inset-bottom);left:0;right:0;padding:13px;max-width:560px;margin:auto}section{border:1px solid #ffffff32;background:#102932db;backdrop-filter:blur(15px);padding:14px;border-radius:18px}input{width:100%;accent-color:#efce91;margin:14px 0}#row{display:flex;justify-content:space-between;gap:8px;font-size:12px}nav{display:flex;gap:8px;margin-top:9px}button{flex:1;border:1px solid #ffffff26;background:#1d414a;border-radius:12px;padding:12px 2px;color:#fff2d9;font-size:12px}button.primary{background:#d5b67d;color:#182b2e;font-weight:700}#state{font-size:11px;color:#b8ccc6;margin-top:7px;min-height:17px}video{position:fixed;right:12px;top:110px;width:110px;height:85px;transform:scaleX(-1);object-fit:cover;border-radius:10px;border:1px solid #ffffff66;display:none}#alert{position:fixed;top:45%;left:6%;right:6%;text-align:center;pointer-events:none;color:#ffc986;text-shadow:0 2px 8px #000;z-index:4}@media(min-width:650px){#ui{bottom:20px}}
-</style></head><body><div id="view"></div><header><div class="badge">WOODEN ARCHITECTURE / 001</div><h1>书院探构</h1><small>传统书院讲堂 · 三维结构示意模型 · v1.3</small></header><video id="video" playsinline muted autoplay></video><div id="alert"></div><div id="ui"><section><div id="row"><b>结构分层拆解</b><span id="percent">0%</span></div><input id="explode" type="range" min="0" max="100" value="0"><div id="row"><span id="part">完整书院</span><span>单指旋转 · 双指缩放</span></div><div id="state">v1.3 已载入 · 先用触屏探索，开启手势后可隔空操控。</div></section><nav><button id="hands" class="primary">✋ 开启手势</button><button id="reset">↺ 复位</button><button id="auto">◌ 自动旋转</button><button id="full">⛶ 全屏</button></nav></div>
+</style></head><body><div id="view"></div><header><div class="badge">WOODEN ARCHITECTURE / 001</div><h1>书院探构</h1><small>传统书院讲堂 · 三维结构示意模型 · v1.4</small></header><video id="video" playsinline muted autoplay></video><div id="alert"></div><div id="ui"><section><div id="row"><b>结构分层拆解</b><span id="percent">0%</span></div><input id="explode" type="range" min="0" max="100" value="0"><div id="row"><span id="part">完整书院</span><span>单指旋转 · 双指缩放</span></div><div id="state">v1.4 已载入 · 先用触屏探索，开启手势后可隔空操控。</div></section><nav><button id="hands" class="primary">✋ 开启手势</button><button id="reset">↺ 复位</button><button id="auto">◌ 自动旋转</button><button id="full">⛶ 全屏</button></nav></div>
 <script type="module">
 import * as T from 'https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js';
 const $=id=>document.getElementById(id),scene=new T.Scene();scene.background=new T.Color(0x08191e);const camera=new T.PerspectiveCamera(38,innerWidth/innerHeight,.1,100),renderer=new T.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,1.75));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;$('view').appendChild(renderer.domElement);
@@ -39,8 +39,21 @@ function updateHands(all){
  if(!all.length){prev=null;kind='idle';gesture='neutral';$('state').textContent='👋 未识别到手 · 视角及大小保持不变';return}
  let h=all.map(measure).sort((a,b)=>a.x-b.x);
  if(h.length===2){const gap=h[1].x-h[0].x;
-   if(kind==='explode'&&prev){explosion=T.MathUtils.clamp(explosion+(gap-prev.gap)*1.6,0,1);$('explode').value=Math.round(explosion*100);refresh()}
-   kind='explode';gesture='neutral';prev={gap};$('state').textContent='👐 双手分合 · 拆解 / 复原';return;
+   // Absolute hand-spacing mapping: when hands nearly meet, the structure fully reassembles.
+   // This also avoids the old incremental-only drift that stopped short of zero.
+   const target=T.MathUtils.clamp((gap-.13)/.48,0,1);
+   if(kind!=='explode') { prev={gap}; }
+   explosion=target<.085?0:target;
+   $('explode').value=Math.round(explosion*100);refresh();
+   kind='explode';gesture='neutral';prev={gap};
+   $('state').textContent=explosion===0?'👐 双手靠拢 · 已完全复原 0%':'👐 双手间距控制拆解 · '+Math.round(explosion*100)+'%';
+   return;
+ }
+ // Fingers may occlude each other when two hands meet: treat a just-seen close pair as complete reassembly.
+ if(kind==='explode'&&prev&&prev.gap<.25){
+   explosion=0;$('explode').value=0;refresh();
+   $('state').textContent='✅ 双手靠拢 · 已完全复原 0%';
+   prev=null;gesture='neutral';kind='idle';return;
  }
  let a=h[0];if(kind==='explode'){prev=null;gesture='neutral'}kind='single';
  // A fist means shrinking, not arming zoom. A held fist shrinks gradually until released.
